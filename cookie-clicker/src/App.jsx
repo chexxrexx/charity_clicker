@@ -29,8 +29,12 @@ function App() {
       x: Math.random() * 1000,
       y: Math.random() * 400,
       direction: Math.random() < 0.5 ? 1 : -1,
+      directionY: Math.random() < 0.5 ? 1 : -1,
+      status: "healthy",   // healthy | sick | healing
+      target: null,        // {x, y} to walk to
     }))
   );
+  
   const placedImageMap = {
     tree: "/tree(1).png",
     pets: "/dog.png",
@@ -42,38 +46,78 @@ function App() {
     const containerWidth = 1100;
     const containerHeight = 420;
     const personSize = 48;
-
+  
     const interval = setInterval(() => {
+      const hospital = placedIcons.find((icon) => icon.name === "pill");
+  
       setPeople((prev) =>
         prev.map((p) => {
-          let newX = p.x + p.direction * 1;
-          let newY = p.y + (p.directionY || 1) * 0.5;
-          let newDirectionX = p.direction;
-          let newDirectionY = p.directionY || 1;
-
-          if (newX <= 0) {
-            newX = 0;
-            newDirectionX = 1;
-          } else if (newX >= containerWidth - personSize) {
-            newX = containerWidth - personSize;
-            newDirectionX = -1;
+          let { x, y, direction, directionY, status } = p;
+  
+          // Occasionally make healthy people sick
+          if (status === "healthy" && Math.random() < 0.001) { // ~0.1% chance per tick
+            status = "sick";
           }
-
-          if (newY <= 0) {
-            newY = 0;
-            newDirectionY = 1;
-          } else if (newY >= containerHeight - personSize) {
-            newY = containerHeight - personSize;
-            newDirectionY = -1;
+  
+          if (status === "sick" && hospital) {
+            // Walk toward hospital
+            const targetX = hospital.x;
+            const targetY = hospital.y;
+            const dx = targetX - x;
+            const dy = targetY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+  
+            if (dist > 5) {
+              x += (dx / dist) * 2; // move speed
+              y += (dy / dist) * 2;
+            } else {
+              // Arrived at hospital
+              status = "healing";
+              setTimeout(() => {
+                setPeople((people) =>
+                  people.map((pp) =>
+                    pp.id === p.id ? { ...pp, status: "healthy" } : pp
+                  )
+                );
+              }, 5000); // heals after 5s
+            }
+          } else if (status !== "healing") {
+            // Normal bouncing movement
+            let newX = x + direction * 1;
+            let newY = y + (directionY || 1) * 0.5;
+            let newDirectionX = direction;
+            let newDirectionY = directionY || 1;
+  
+            if (newX <= 0) {
+              newX = 0;
+              newDirectionX = 1;
+            } else if (newX >= containerWidth - personSize) {
+              newX = containerWidth - personSize;
+              newDirectionX = -1;
+            }
+  
+            if (newY <= 0) {
+              newY = 0;
+              newDirectionY = 1;
+            } else if (newY >= containerHeight - personSize) {
+              newY = containerHeight - personSize;
+              newDirectionY = -1;
+            }
+  
+            x = newX;
+            y = newY;
+            direction = newDirectionX;
+            directionY = newDirectionY;
           }
-
-          return { ...p, x: newX, y: newY, direction: newDirectionX, directionY: newDirectionY };
+  
+          return { ...p, x, y, direction, directionY, status };
         })
       );
     }, 100);
-
+  
     return () => clearInterval(interval);
-  }, []);
+  }, [placedIcons]);
+  
 
   // Click to earn cookies
   const handleClick = () => {
@@ -335,19 +379,24 @@ function App() {
 
         {/* people (non-interactive) */}
         {people.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              position: 'absolute',
-              left: `${p.x}px`,
-              top: `${p.y}px`,
-              fontSize: '50px',
-              pointerEvents: 'none',
-            }}
-          >
-            🧍‍♂️
-          </div>
-        ))}
+      <div
+        key={p.id}
+        style={{
+          position: "absolute",
+          left: `${p.x}px`,
+          top: `${p.y}px`,
+          fontSize: "40px",
+          fontWeight: "bold",
+          color: p.status === "sick" ? "red" : "black",
+          pointerEvents: "none",
+        }}
+      >
+        {p.status === "sick"
+          ? "😷"
+          : p.status === "healing"
+          ? "🛏️"
+          : "🧍‍♂️"}
+      </div>))}
       </div>
     </div>
   );
