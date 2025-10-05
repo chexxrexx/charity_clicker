@@ -249,7 +249,7 @@ function App() {
 
       {/* Main game area */}
       <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginLeft: '50px' }}>
-        <h1>Charity clicker</h1>
+        <h1>Charity Clicker</h1>
         <button className="cookie-button" onClick={handleClick}>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <img src="/planet-earth.png" alt="earth" width="200" style={{ borderRadius: '50%' }} />
