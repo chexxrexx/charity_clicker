@@ -20,6 +20,8 @@ function App() {
     Culture: 100,
   });
   const [hearts, setHearts] = useState([]);
+  const [draggingItem, setDraggingItem] = useState(null);
+
 
 
   // Click to earn cookies
@@ -169,7 +171,7 @@ useEffect(() => {
 
             {/* Donate button */}
             <button className="upgrade-button" onClick={() => buyUpgrade(name)} disabled={cookies < item.baseCost}>
-              Donate (Cost: $ {item.baseCost})
+              Donate (Cost: ${item.baseCost})
             </button>
           </div>
         ))}
@@ -192,9 +194,6 @@ useEffect(() => {
     </div>
   ))}
 </div>
-
-
-
       {/* Main game area */}
       <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginLeft: '50px' }}>
         <h1>Charity clicker</h1>
@@ -231,9 +230,41 @@ useEffect(() => {
 
       {/* Landscape / placement area */}
       <div className="landscape" style={{ display: 'flex', marginRight: '0px', marginBottom: '-500px', position: 'relative' }} onClick={handleBackgroundClick}>
-        <div style={{ width: '1100px', height: '420px', backgroundColor: '#D3C09D', position: 'relative' }}>
+      <div
+          style={{ width: '1100px', height: '420px', backgroundColor: '#D3C09D', position: 'relative' }}
+          onMouseMove={(e) => {
+            if (draggingItem) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setPlacedIcons((prev) =>
+                prev.map((icon, idx) =>
+                  idx === draggingItem.index
+                    ? {
+                        ...icon,
+                        x: e.clientX - rect.left - draggingItem.offsetX,
+                        y: e.clientY - rect.top - draggingItem.offsetY,
+                      }
+                    : icon
+                )
+              );
+            }
+          }}
+          onMouseUp={() => setDraggingItem(null)}
+        >
           {placedIcons.map((icon, index) => (
-            <img key={index} src={`/${icon.name}.png`} alt={icon.name} width="50" style={{ position: 'absolute', left: `${icon.x}px`, top: `${icon.y}px` }} />
+            <img
+              key={index}
+              src={`/${icon.name}.png`}
+              alt={icon.name}
+              width="50"
+              style={{ position: 'absolute', left: `${icon.x}px`, top: `${icon.y}px`, cursor: 'grab' }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                const offsetX = e.clientX - rect.left; // distance from cursor to top-left of image
+                const offsetY = e.clientY - rect.top;
+                setDraggingItem({ index, offsetX, offsetY });
+              }}
+            />
           ))}
         </div>
       </div>
