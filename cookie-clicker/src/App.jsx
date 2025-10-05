@@ -7,7 +7,7 @@ function App() {
     tree: { level: 1, baseCost: 5, increment: 2, count: 0, durability: 100 },
     pets: { level: 1, baseCost: 10, increment: 5, count: 0, durability: 100 },
     pill: { level: 1, baseCost: 15, increment: 7, count: 0, durability: 100 },
-    school: { level: 1, baseCost: 20, increment: 10, count: 0, durability: 100 },
+    school: { levmyel: 1, baseCost: 20, increment: 10, count: 0, durability: 100 },
     music: { level: 1, baseCost: 25, increment: 12, count: 0, durability: 100 },
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -21,9 +21,63 @@ function App() {
   });
   const [hearts, setHearts] = useState([]);
   const [draggingItem, setDraggingItem] = useState(null);
+  const [people, setPeople] = useState(
+    Array.from({ length: 10 }, () => ({
+      id: Date.now() + Math.random(),
+      x: Math.random() * 1000, // within landscape width
+      y: Math.random() * 400,  // within landscape height
+      direction: Math.random() < 0.5 ? 1 : -1, // left or right
+    }))
+  );
+  const placedImageMap = {
+    tree: "/tree(1).png",
+    pets: "/dog.png",
+    pill: "/hospital.png", // show a different image when placed
+    school: "/education.png",
+  };
 
-
-
+  useEffect(() => {
+    const containerWidth = 1100;
+    const containerHeight = 420;
+    const personSize = 48; // approximate height/width of stick person
+  
+    const interval = setInterval(() => {
+      setPeople((prev) =>
+        prev.map((p) => {
+          let newX = p.x + p.direction * 1;
+          let newY = p.y + (p.directionY || 1) * 0.5; // vertical speed slower than horizontal
+          let newDirectionX = p.direction;
+          let newDirectionY = p.directionY || 1;
+  
+          // Bounce horizontally
+          if (newX <= 0) {
+            newX = 0;
+            newDirectionX = 1;
+          } else if (newX >= containerWidth - personSize) {
+            newX = containerWidth - personSize;
+            newDirectionX = -1;
+          }
+  
+          // Bounce vertically
+          if (newY <= 0) {
+            newY = 0;
+            newDirectionY = 1;
+          } else if (newY >= containerHeight - personSize) {
+            newY = containerHeight - personSize;
+            newDirectionY = -1;
+          }
+  
+          return { ...p, x: newX, y: newY, direction: newDirectionX, directionY: newDirectionY };
+        })
+      );
+    }, 100);
+  
+    return () => clearInterval(interval);
+  }, []);
+  
+  
+  
+  
   // Click to earn cookies
   const handleClick = () => {
     setCookies(cookies + 1);
@@ -108,8 +162,14 @@ useEffect(() => {
 
       setPlacedIcons((prev) => [
         ...prev,
-        { x, y, name: iconName },
+        {
+          x,
+          y,
+          name: iconName,
+          image: placedImageMap[iconName] || `/${iconName}.png`,
+        },
       ]);
+      
     }
   };
 
@@ -228,46 +288,41 @@ useEffect(() => {
         {snackbarOpen && <div className="snackbar">Upgrade Purchased!</div>}
       </div>
 
-      {/* Landscape / placement area */}
-      <div className="landscape" style={{ display: 'flex', marginRight: '0px', marginBottom: '-500px', position: 'relative' }} onClick={handleBackgroundClick}>
       <div
-          style={{ width: '1100px', height: '420px', backgroundColor: '#D3C09D', position: 'relative' }}
-          onMouseMove={(e) => {
-            if (draggingItem) {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setPlacedIcons((prev) =>
-                prev.map((icon, idx) =>
-                  idx === draggingItem.index
-                    ? {
-                        ...icon,
-                        x: e.clientX - rect.left - draggingItem.offsetX,
-                        y: e.clientY - rect.top - draggingItem.offsetY,
-                      }
-                    : icon
-                )
-              );
-            }
-          }}
-          onMouseUp={() => setDraggingItem(null)}
-        >
-          {placedIcons.map((icon, index) => (
-            <img
-              key={index}
-              src={`/${icon.name}.png`}
-              alt={icon.name}
-              width="50"
-              style={{ position: 'absolute', left: `${icon.x}px`, top: `${icon.y}px`, cursor: 'grab' }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                const offsetX = e.clientX - rect.left; // distance from cursor to top-left of image
-                const offsetY = e.clientY - rect.top;
-                setDraggingItem({ index, offsetX, offsetY });
-              }}
-            />
-          ))}
-        </div>
+  className="landscape"
+  style={{ display: 'flex', marginRight: '0px', marginBottom: '-500px', position: 'relative' }}
+  onClick={handleBackgroundClick}
+>
+  <div style={{ width: '1100px', height: '420px', backgroundColor: '#D3C09D', position: 'relative' }}>
+    {/* Place items here */}
+    {placedIcons.map((icon, index) => (
+      <img
+        key={index}
+        src={icon.image} // use the new image if defined
+        alt={icon.name}
+        width="50"
+        style={{ position: 'absolute', left: `${icon.x}px`, top: `${icon.y}px` }}
+      />
+))}
+
+
+    {people.map((p) => (
+      <div
+        key={p.id}
+        style={{
+          position: 'absolute',
+          left: `${p.x}px`,
+          top: `${p.y}px`,
+          fontSize: '50px',
+          pointerEvents: 'none', // so they don’t block dragging
+        }}
+      >
+        🧍‍♂️
       </div>
+    ))}
+  </div>
+</div>
+
     </div>
   );
 }
